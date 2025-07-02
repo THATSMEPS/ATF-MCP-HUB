@@ -289,7 +289,7 @@ if __name__ == "__main__":
     print("📡 Transport: Streamable HTTP")
     print("🌐 Server will be available at: http://127.0.0.1:8002/docker/mcp")
     print("\nPress Ctrl+C to stop the server")
-
+    
     mcp.run(
         transport="streamable-http",
         host="127.0.0.1",

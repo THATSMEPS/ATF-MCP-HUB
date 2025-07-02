@@ -17,7 +17,7 @@ ENV DEFAULT_PORT=3000
 
 # Set up entrypoint script
 RUN echo '#!/bin/sh' > /entrypoint.sh && \
-    echo 'PORT=\3000' >> /entrypoint.sh && \
+    echo 'PORT=3000' >> /entrypoint.sh && \
     echo 'echo "Using port: \3000"' >> /entrypoint.sh && \
     echo 'if [ -f "package.json" ]; then' >> /entrypoint.sh && \
     echo '  main_file=$(node -p "require(\"./package.json\").main || \"index.js\"")' >> /entrypoint.sh && \
