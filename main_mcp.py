@@ -10,6 +10,7 @@ from docker_mcp import mcp as docker_mcp
 from git_clone_mcp import mcp as git_clone_mcp 
 from dependencies_mcp import mcp as dependencies_mcp
 from mysql_query_mcp import mcp as mysql_query_mcp
+from mongodb_mcp import mcp as mongodb_mcp
 
 # Create main MCP instance
 main_mcp = FastMCP(name="ATF Tools Main Server")
@@ -20,6 +21,7 @@ def _server():
     main_mcp.mount("git_clone", git_clone_mcp)
     main_mcp.mount("dependencies", dependencies_mcp)
     main_mcp.mount("mysql_query", mysql_query_mcp)
+    main_mcp.mount("mongodb", mongodb_mcp)
 
 def run_streamable_http():
     """Run with streamable HTTP transport"""
@@ -33,6 +35,7 @@ def run_fast_api():
     git_clone_app = git_clone_mcp.http_app()
     dependencies_app = dependencies_mcp.http_app()
     mysql_query_app = mysql_query_mcp.http_app()
+    mongodb_app = mongodb_mcp.http_app()
 
     @contextlib.asynccontextmanager
     async def lifespan(app: Starlette):
@@ -42,6 +45,7 @@ def run_fast_api():
             await stack.enter_async_context(dependencies_app.lifespan(dependencies_app))
             yield
             await stack.enter_async_context(mysql_query_app.lifespan(mysql_query_app))
+            await stack.enter_async_context(mongodb_app.lifespan(mongodb_app))
 
 
     http_app = Starlette(
@@ -49,7 +53,8 @@ def run_fast_api():
             Mount("/tools/docker", app=docker_app),
             Mount("/tools/git_clone", app=git_clone_app),
             Mount("/tools/dependencies", app=dependencies_app),
-            Mount("/tools/mysql_query", app=mysql_query_app)
+            Mount("/tools/mysql_query", app=mysql_query_app),
+            Mount("/tools/mongodb", app=mongodb_app)
         ],
         lifespan=lifespan
     )
@@ -64,6 +69,7 @@ if __name__ == "__main__":
     print("   - http://127.0.0.1:8000/tools/git_clone")
     print("   - http://127.0.0.1:8000/tools/dependencies")
     print("   - http://127.0.0.1:8000/tools/mysql_query")
+    print("   - http://127.0.0.1:8000/tools/mongodb")
     print("\nPress Ctrl+C to stop the server")
     
     _server()
