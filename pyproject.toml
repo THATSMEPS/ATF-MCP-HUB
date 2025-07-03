@@ -10,4 +10,9 @@ dependencies = [
     "mysql-connector-python>=9.3.0",
     "pymongo>=4.13.2",
     "requests>=2.32.4",
+    "opencv-python",
+    "numpy",
+    "matplotlib",
+    "pillow",
+    "scikit-image"
 ]
