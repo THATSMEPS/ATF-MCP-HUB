@@ -163,91 +163,111 @@ async def create_collection(
         'message': f"Attempted to create {len(names)} collection(s)."
     }
 
-# Tool 5: Read Collection (single or multiple)
+# Tool 5: Read Collection (run arbitrary query on a single collection, with collection name check)
 @mcp.tool
 async def read_collection(
     ctx: Context,
     db_mongo_container_name: str,
     sh_mongo_container_name: str,
     database_name: str,
-    collection_name: str = None,
-    collection_names: list = None
+    collection_name: str,
+    query: str
 ) -> Dict[str, Any]:
     """
-    Read all documents from one or more collections in a MongoDB database using mongosh.
-    Provide either collection_name (str) or collection_names (list of str).
+    Run an arbitrary MongoDB read query (e.g., find, aggregate, etc.) on a single collection.
+    Checks that the collection_name matches the collection referenced in the query (e.g., db.collection_name).
     """
-    results = []
-    names = []
-    if collection_names:
-        names = collection_names
-    elif collection_name:
-        names = [collection_name]
-    else:
-        raise ToolError("No collection_name or collection_names provided.")
-    for name in names:
+    import re
+    # Try to extract the collection name from the query (e.g., db.collection.find(...))
+    match = re.match(r"db\.([a-zA-Z0-9_]+)\.", query.strip())
+    if not match:
+        return {
+            'status': 'error',
+            'message': 'Could not parse collection name from query. Please use the format db.<collection>.<operation>()'
+        }
+    query_collection = match.group(1)
+    if query_collection != collection_name:
+        return {
+            'status': 'error',
+            'message': f"collection_name ('{collection_name}') does not match collection referenced in query ('{query_collection}')."
+        }
+    try:
+        await ctx.info(f"Running read query on collection '{collection_name}' in database '{database_name}': {query}")
+        proc = subprocess.run([
+            'docker', 'exec', sh_mongo_container_name,
+            'mongosh', f'mongodb://{db_mongo_container_name}:27017/{database_name}',
+            '--quiet', '--eval', f'JSON.stringify({query})'
+        ], capture_output=True, text=True)
+        if proc.returncode != 0:
+            return {
+                'status': 'error',
+                'message': f"Query failed: {proc.stderr}\nSTDOUT: {proc.stdout}"
+            }
         try:
-            await ctx.info(f"Reading all documents from collection '{name}' in database '{database_name}'...")
-            read_process = subprocess.run([
-                'docker', 'exec', sh_mongo_container_name,
-                'mongosh', f'mongodb://{db_mongo_container_name}:27017/{database_name}',
-                '--quiet', '--eval', f'JSON.stringify(db.{name}.find().toArray())'
-            ], capture_output=True, text=True)
-            if read_process.returncode != 0:
-                raise ToolError(f"Failed to read collection: {read_process.stderr}\nSTDOUT: {read_process.stdout}")
-            try:
-                docs = json.loads(read_process.stdout.strip())
-            except Exception:
-                docs = read_process.stdout.strip()
-            results.append({'collection_name': name, 'status': 'success', 'documents': docs})
-        except Exception as e:
-            results.append({'collection_name': name, 'status': 'error', 'error': str(e)})
-    return {
-        'results': results,
-        'message': f"Attempted to read {len(names)} collection(s)."
-    }
+            result = json.loads(proc.stdout.strip())
+        except Exception:
+            result = proc.stdout.strip()
+        return {
+            'status': 'success',
+            'message': f"Query executed successfully.",
+            'result': result
+        }
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': f"Query is wrong, cannot perform: {str(e)}"
+        }
 
-# Tool 6: Update Collection (single or multiple)
+# Tool 6: Update Collection (run arbitrary query on a single collection, with collection name check)
 @mcp.tool
 async def update_collection(
     ctx: Context,
     db_mongo_container_name: str,
     sh_mongo_container_name: str,
     database_name: str,
-    collection_name: str = None,
-    collection_names: list = None,
-    filter_query: str = '{}',
-    update_query: str = '{}'
+    collection_name: str,
+    query: str
 ) -> Dict[str, Any]:
     """
-    Update documents in one or more collections using mongosh. filter_query and update_query should be JSON strings.
-    Provide either collection_name (str) or collection_names (list of str).
+    Run an arbitrary MongoDB query (e.g., rename, index, etc.) on a single collection.
+    Checks that the collection_name matches the collection referenced in the query (e.g., db.collection_name).
     """
-    results = []
-    names = []
-    if collection_names:
-        names = collection_names
-    elif collection_name:
-        names = [collection_name]
-    else:
-        raise ToolError("No collection_name or collection_names provided.")
-    for name in names:
-        try:
-            await ctx.info(f"Updating documents in collection '{name}' in database '{database_name}'...")
-            update_process = subprocess.run([
-                'docker', 'exec', sh_mongo_container_name,
-                'mongosh', f'mongodb://{db_mongo_container_name}:27017/{database_name}',
-                '--quiet', '--eval', f'db.{name}.updateMany({filter_query}, {update_query})'
-            ], capture_output=True, text=True)
-            if update_process.returncode != 0:
-                raise ToolError(f"Failed to update collection: {update_process.stderr}\nSTDOUT: {update_process.stdout}")
-            results.append({'collection_name': name, 'status': 'success'})
-        except Exception as e:
-            results.append({'collection_name': name, 'status': 'error', 'error': str(e)})
-    return {
-        'results': results,
-        'message': f"Attempted to update {len(names)} collection(s)."
-    }
+    import re
+    # Try to extract the collection name from the query (e.g., db.oldCollection.something)
+    match = re.match(r"db\.([a-zA-Z0-9_]+)\.", query.strip())
+    if not match:
+        return {
+            'status': 'error',
+            'message': 'Could not parse collection name from query. Please use the format db.<collection>.<operation>()'
+        }
+    query_collection = match.group(1)
+    if query_collection != collection_name:
+        return {
+            'status': 'error',
+            'message': f"collection_name ('{collection_name}') does not match collection referenced in query ('{query_collection}')."
+        }
+    try:
+        await ctx.info(f"Running query on collection '{collection_name}' in database '{database_name}': {query}")
+        proc = subprocess.run([
+            'docker', 'exec', sh_mongo_container_name,
+            'mongosh', f'mongodb://{db_mongo_container_name}:27017/{database_name}',
+            '--eval', query
+        ], capture_output=True, text=True)
+        if proc.returncode != 0:
+            return {
+                'status': 'error',
+                'message': f"Query failed: {proc.stderr}\nSTDOUT: {proc.stdout}"
+            }
+        return {
+            'status': 'success',
+            'message': f"Query executed successfully.",
+            'stdout': proc.stdout.strip()
+        }
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': f"Query is wrong, cannot perform: {str(e)}"
+        }
 
 # Tool 7: Delete Collection (single or multiple, comma-separated input)
 @mcp.tool
