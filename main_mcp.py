@@ -40,8 +40,8 @@ def run_fast_api():
             await stack.enter_async_context(docker_app.lifespan(docker_app))
             await stack.enter_async_context(git_clone_app.lifespan(git_clone_app))
             await stack.enter_async_context(dependencies_app.lifespan(dependencies_app))
-            yield
             await stack.enter_async_context(mysql_query_app.lifespan(mysql_query_app))
+            yield
 
 
     http_app = Starlette(

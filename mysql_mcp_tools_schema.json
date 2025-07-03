@@ -1,0 +1,457 @@
+{
+    "server_info": {
+        "name": "MySQL Evaluator MCP Server",
+        "description": "MCP server for MySQL database evaluation and testing in Docker containers",
+        "version": "1.0.0",
+        "transport": "streamable-http",
+        "default_url": "http://127.0.0.1:8003/mysql/mcp",
+        "port": 8003,
+        "path": "/mysql/mcp"
+    },
+    "tools": [
+        {
+            "name": "create_mysql_docker_environment",
+            "description": "Creates a MySQL Docker container for query evaluation",
+            "function": "Environment Setup",
+            "category": "Infrastructure",
+            "parameters": {
+                "mysql_port": {
+                    "type": "integer",
+                    "required": false,
+                    "default": 3306,
+                    "description": "Port to expose MySQL on"
+                }
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "success",
+                            "error"
+                        ]
+                    },
+                    "container_id": {
+                        "type": "string",
+                        "description": "Unique container identifier"
+                    },
+                    "container_name": {
+                        "type": "string",
+                        "description": "Docker container name"
+                    },
+                    "port": {
+                        "type": "integer",
+                        "description": "Exposed MySQL port"
+                    },
+                    "connection_info": {
+                        "type": "object",
+                        "properties": {
+                            "host": {
+                                "type": "string"
+                            },
+                            "port": {
+                                "type": "integer"
+                            },
+                            "user": {
+                                "type": "string"
+                            },
+                            "password": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "example_usage": {
+                "input": {
+                    "mysql_port": 3307
+                },
+                "output": {
+                    "status": "success",
+                    "container_id": "mysql-evaluator-1704067200",
+                    "container_name": "mysql-evaluator-1704067200",
+                    "port": 3307,
+                    "connection_info": {
+                        "host": "localhost",
+                        "port": 3307,
+                        "user": "evaluator",
+                        "password": "evaluatorpass"
+                    }
+                }
+            }
+        },
+        {
+            "name": "create_database",
+            "description": "Creates a database in an existing MySQL container",
+            "function": "Database Management",
+            "category": "Database",
+            "parameters": {
+                "container_id": {
+                    "type": "string",
+                    "required": true,
+                    "description": "MySQL container ID from create_mysql_docker_environment"
+                },
+                "database_name": {
+                    "type": "string",
+                    "required": true,
+                    "description": "Name of the database to create"
+                }
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "success",
+                            "error"
+                        ]
+                    },
+                    "database_name": {
+                        "type": "string"
+                    },
+                    "container_id": {
+                        "type": "string"
+                    },
+                    "message": {
+                        "type": "string"
+                    }
+                }
+            },
+            "example_usage": {
+                "input": {
+                    "container_id": "mysql-evaluator-1704067200",
+                    "database_name": "contest_db"
+                },
+                "output": {
+                    "status": "success",
+                    "database_name": "contest_db",
+                    "container_id": "mysql-evaluator-1704067200",
+                    "message": "Database contest_db created successfully"
+                }
+            }
+        },
+        {
+            "name": "setup_contest_database",
+            "description": "Sets up database schema and initial data with SQL queries",
+            "function": "Database Initialization",
+            "category": "Database",
+            "parameters": {
+                "container_id": {
+                    "type": "string",
+                    "required": true,
+                    "description": "MySQL container ID"
+                },
+                "database_name": {
+                    "type": "string",
+                    "required": true,
+                    "description": "Name of the database to setup"
+                },
+                "setup_queries": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "required": true,
+                    "description": "List of SQL queries to execute for database setup"
+                }
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "success",
+                            "error"
+                        ]
+                    },
+                    "database_name": {
+                        "type": "string"
+                    },
+                    "queries_executed": {
+                        "type": "integer"
+                    },
+                    "message": {
+                        "type": "string"
+                    }
+                }
+            },
+            "example_usage": {
+                "input": {
+                    "container_id": "mysql-evaluator-1704067200",
+                    "database_name": "contest_db",
+                    "setup_queries": [
+                        "CREATE TABLE users (id INT PRIMARY KEY, name VARCHAR(100))",
+                        "INSERT INTO users VALUES (1, 'Alice'), (2, 'Bob')"
+                    ]
+                },
+                "output": {
+                    "status": "success",
+                    "database_name": "contest_db",
+                    "queries_executed": 2,
+                    "message": "Database contest_db setup completed"
+                }
+            }
+        },
+        {
+            "name": "evaluate_mysql_query",
+            "description": "Executes and evaluates SQL queries against the database with optional result comparison",
+            "function": "Query Evaluation",
+            "category": "Evaluation",
+            "parameters": {
+                "container_id": {
+                    "type": "string",
+                    "required": true,
+                    "description": "MySQL container ID"
+                },
+                "database_name": {
+                    "type": "string",
+                    "required": true,
+                    "description": "Name of the database to query"
+                },
+                "user_query": {
+                    "type": "string",
+                    "required": true,
+                    "description": "SQL query to execute and evaluate"
+                },
+                "expected_result": {
+                    "type": "array",
+                    "required": false,
+                    "description": "Expected query result for comparison (optional)"
+                },
+                "timeout_seconds": {
+                    "type": "integer",
+                    "required": false,
+                    "default": 30,
+                    "description": "Query execution timeout in seconds"
+                }
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "success",
+                            "error",
+                            "timeout"
+                        ]
+                    },
+                    "query": {
+                        "type": "string"
+                    },
+                    "database": {
+                        "type": "string"
+                    },
+                    "result": {
+                        "type": "array",
+                        "description": "Query execution result"
+                    },
+                    "correct": {
+                        "type": "boolean",
+                        "description": "Whether result matches expected (if provided)"
+                    },
+                    "comparison": {
+                        "type": "object",
+                        "properties": {
+                            "expected": {
+                                "type": "array"
+                            },
+                            "actual": {
+                                "type": "array"
+                            },
+                            "match": {
+                                "type": "boolean"
+                            }
+                        }
+                    },
+                    "execution_time": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "Error message if status is error"
+                    }
+                }
+            },
+            "example_usage": {
+                "input": {
+                    "container_id": "mysql-evaluator-1704067200",
+                    "database_name": "contest_db",
+                    "user_query": "SELECT * FROM users ORDER BY id",
+                    "expected_result": [
+                        {
+                            "id": 1,
+                            "name": "Alice"
+                        },
+                        {
+                            "id": 2,
+                            "name": "Bob"
+                        }
+                    ]
+                },
+                "output": {
+                    "status": "success",
+                    "query": "SELECT * FROM users ORDER BY id",
+                    "database": "contest_db",
+                    "result": [
+                        {
+                            "id": 1,
+                            "name": "Alice"
+                        },
+                        {
+                            "id": 2,
+                            "name": "Bob"
+                        }
+                    ],
+                    "correct": true,
+                    "comparison": {
+                        "expected": [
+                            {
+                                "id": 1,
+                                "name": "Alice"
+                            },
+                            {
+                                "id": 2,
+                                "name": "Bob"
+                            }
+                        ],
+                        "actual": [
+                            {
+                                "id": 1,
+                                "name": "Alice"
+                            },
+                            {
+                                "id": 2,
+                                "name": "Bob"
+                            }
+                        ],
+                        "match": true
+                    },
+                    "execution_time": null
+                }
+            }
+        },
+        {
+            "name": "cleanup_mysql_environment",
+            "description": "Stops and removes the MySQL Docker container to free resources",
+            "function": "Resource Cleanup",
+            "category": "Infrastructure",
+            "parameters": {
+                "container_id": {
+                    "type": "string",
+                    "required": true,
+                    "description": "MySQL container ID to cleanup and remove"
+                }
+            },
+            "returns": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "success",
+                            "error"
+                        ]
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Cleanup operation result message"
+                    }
+                }
+            },
+            "example_usage": {
+                "input": {
+                    "container_id": "mysql-evaluator-1704067200"
+                },
+                "output": {
+                    "status": "success",
+                    "message": "Container mysql-evaluator-1704067200 cleaned up successfully"
+                }
+            }
+        }
+    ],
+    "workflows": [
+        {
+            "name": "Complete Evaluation Workflow",
+            "description": "Full workflow for setting up, evaluating, and cleaning up MySQL environment",
+            "steps": [
+                {
+                    "step": 1,
+                    "tool": "create_mysql_docker_environment",
+                    "description": "Create MySQL container",
+                    "required": true
+                },
+                {
+                    "step": 2,
+                    "tool": "create_database",
+                    "description": "Create database in container",
+                    "required": true
+                },
+                {
+                    "step": 3,
+                    "tool": "setup_contest_database",
+                    "description": "Setup tables and initial data",
+                    "required": true
+                },
+                {
+                    "step": 4,
+                    "tool": "evaluate_mysql_query",
+                    "description": "Execute and evaluate queries (can be called multiple times)",
+                    "required": true,
+                    "repeatable": true
+                },
+                {
+                    "step": 5,
+                    "tool": "cleanup_mysql_environment",
+                    "description": "Clean up resources",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "Quick Query Testing",
+            "description": "Simplified workflow for testing queries against existing setup",
+            "steps": [
+                {
+                    "step": 1,
+                    "tool": "evaluate_mysql_query",
+                    "description": "Execute query against existing database",
+                    "required": true,
+                    "repeatable": true
+                }
+            ]
+        }
+    ],
+    "error_codes": {
+        "CONTAINER_CREATE_FAILED": "Failed to create Docker container",
+        "DATABASE_CREATE_FAILED": "Failed to create database",
+        "QUERY_EXECUTION_FAILED": "SQL query execution failed",
+        "QUERY_TIMEOUT": "Query execution timed out",
+        "CONTAINER_NOT_FOUND": "Specified container does not exist",
+        "SETUP_QUERY_FAILED": "Database setup query failed",
+        "CLEANUP_FAILED": "Container cleanup operation failed"
+    },
+    "client_libraries": {
+        "python": {
+            "recommended": "mcp-client-python",
+            "alternative": "requests + custom wrapper"
+        },
+        "javascript": {
+            "recommended": "mcp-client-js",
+            "alternative": "axios + custom wrapper"
+        },
+        "curl": {
+            "description": "Direct HTTP calls to MCP endpoint"
+        }
+    },
+    "system_requirements": {
+        "docker": "Docker Engine installed and running",
+        "memory": "Minimum 512MB available for MySQL container",
+        "storage": "Temporary space for MySQL data (auto-cleaned)",
+        "network": "Access to Docker daemon and MySQL port"
+    }
+}
