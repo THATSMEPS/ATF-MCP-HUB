@@ -57,7 +57,7 @@ def run_fast_api():
             Mount("/tools/git_clone", app=git_clone_app),
             Mount("/tools/dependencies", app=dependencies_app),
             Mount("/tools/mysql_query", app=mysql_query_app),
-            Mount("/tools/mongodb", app=mongodb_app)
+            Mount("/tools/mongodb", app=mongodb_app),
             Mount("/tools/image_processing", app=image_processing_app)
         ],
         lifespan=lifespan
