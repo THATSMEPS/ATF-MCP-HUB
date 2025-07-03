@@ -249,28 +249,24 @@ async def update_collection(
         'message': f"Attempted to update {len(names)} collection(s)."
     }
 
-# Tool 7: Delete Collection (single or multiple)
+# Tool 7: Delete Collection (single or multiple, comma-separated input)
 @mcp.tool
 async def delete_collection(
     ctx: Context,
     db_mongo_container_name: str,
     sh_mongo_container_name: str,
     database_name: str,
-    collection_name: str = None,
-    collection_names: list = None
+    collection_names: str
 ) -> Dict[str, Any]:
     """
     Drop one or more collections from a MongoDB database using mongosh.
-    Provide either collection_name (str) or collection_names (list of str).
+    Provide collection_names as a comma-separated string (e.g., 'col1' or 'col1,col2,col3').
     """
+    # Split and strip whitespace from each name
+    names = [name.strip() for name in collection_names.split(',') if name.strip()]
+    if not names:
+        raise ToolError("No valid collection names provided.")
     results = []
-    names = []
-    if collection_names:
-        names = collection_names
-    elif collection_name:
-        names = [collection_name]
-    else:
-        raise ToolError("No collection_name or collection_names provided.")
     for name in names:
         try:
             await ctx.info(f"Dropping collection '{name}' in database '{database_name}'...")
