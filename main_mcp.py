@@ -12,6 +12,7 @@ from dependencies_mcp import mcp as dependencies_mcp
 from mysql_query_mcp import mcp as mysql_query_mcp
 from mongodb_mcp import mcp as mongodb_mcp
 from image_processing_mcp import mcp as image_processing_mcp
+from fastapi_mcp import mcp as fastapi_mcp
 
 # Create main MCP instance
 main_mcp = FastMCP(name="ATF Tools Main Server")
@@ -24,6 +25,7 @@ def _server():
     main_mcp.mount("mysql_query", mysql_query_mcp)
     main_mcp.mount("mongodb", mongodb_mcp)
     main_mcp.mount("image_processing", image_processing_mcp)
+    main_mcp.mount("fastapi", fastapi_mcp)
 
 def run_streamable_http():
     """Run with streamable HTTP transport"""
@@ -39,6 +41,7 @@ def run_fast_api():
     mysql_query_app = mysql_query_mcp.http_app()
     mongodb_app = mongodb_mcp.http_app()
     image_processing_app = image_processing_mcp.http_app()
+    fastapi_app = fastapi_mcp.http_app()
 
     @contextlib.asynccontextmanager
     async def lifespan(app: Starlette):
@@ -49,6 +52,7 @@ def run_fast_api():
             await stack.enter_async_context(mysql_query_app.lifespan(mysql_query_app))
             await stack.enter_async_context(mongodb_app.lifespan(mongodb_app))
             await stack.enter_async_context(image_processing_app.lifespan(image_processing_app))
+            await stack.enter_async_context(fastapi_app.lifespan(fastapi_app))
             yield
 
     http_app = Starlette(
@@ -58,7 +62,8 @@ def run_fast_api():
             Mount("/tools/dependencies", app=dependencies_app),
             Mount("/tools/mysql_query", app=mysql_query_app),
             Mount("/tools/mongodb", app=mongodb_app),
-            Mount("/tools/image_processing", app=image_processing_app)
+            Mount("/tools/image_processing", app=image_processing_app),
+            Mount("/tools/fastapi", app=fastapi_app)
         ],
         lifespan=lifespan
     )
@@ -74,6 +79,7 @@ if __name__ == "__main__":
     print("   - http://127.0.0.1:8000/tools/dependencies")
     print("   - http://127.0.0.1:8000/tools/mysql_query")
     print("   - http://127.0.0.1:8000/tools/mongodb")
+    print("   - http://127.0.0.1:8000/tools/fastapi")
     print("\nPress Ctrl+C to stop the server")
     
     _server()
