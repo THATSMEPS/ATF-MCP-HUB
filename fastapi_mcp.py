@@ -150,7 +150,7 @@ def install_requirements(container_id: str, repo_name: str) -> dict:
         # Run pip install -r requirements.txt in the repo directory
         install_proc = subprocess.run([
             'docker', 'exec', container_id, 'bash', '-c', f'cd app/{repo_name} && pip install -r requirements.txt'
-        ], capture_output=True, text=True)
+        ], capture_output=True, text=True, encoding="utf-8", errors="replace")
         stdout = install_proc.stdout if install_proc.stdout is not None else ''
         stderr = install_proc.stderr if install_proc.stderr is not None else ''
         if install_proc.returncode != 0:
@@ -178,7 +178,6 @@ def install_requirements(container_id: str, repo_name: str) -> dict:
             'message': f'Unexpected error: {str(e)}'
         }
 
-# Tool: Start FastAPI backend inside the container at the repo directory
 @mcp.tool
 def start_fastapi_backend(container_id: str, repo_name: str, run_command: str) -> dict:
     """
@@ -191,9 +190,9 @@ def start_fastapi_backend(container_id: str, repo_name: str, run_command: str) -
         dict: Status, message, and info about the running backend
     """
     try:
-        # Always ensure --host 127.0.0.1 in the run_command for accessibility
+        # Always ensure --host 0.0.0.0 in the run_command for accessibility
         if '--host' not in run_command:
-            run_command += ' --host 127.0.0.1'
+            run_command += ' --host 0.0.0.0'
         # Run the command in the background inside the container at /app/repo_name
         bash_cmd = f"cd app/{repo_name} && nohup {run_command} > fastapi.log 2>&1 &"
         proc = subprocess.run([
