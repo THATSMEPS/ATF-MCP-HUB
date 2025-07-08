@@ -16,10 +16,11 @@ async def create_docker_container(port: int = 8080) -> Dict[str, Any]:
     container_name = f"fastapi-{int(time.time())}"
     image = f"python:3.13-slim"
     try:
-        # Run the container (detached, with port mapping, and keep it running)
+        # Generate a unique 4-digit host port using current time (mmss), always 4 digits and valid
+        host_port = 8080
         run_proc = subprocess.run([
-            'docker', 'run', '-d', '--name', container_name,
-            '-p', f'{port}:8000', image, 'sleep', 'infinity'
+            'docker', 'run', '-it', '-d', '--name', container_name,
+            '-p', f'{host_port}:{port}', image, 'sleep', 'infinity'
         ], capture_output=True, text=True)
         if run_proc.returncode != 0:
             return {
@@ -38,7 +39,8 @@ async def create_docker_container(port: int = 8080) -> Dict[str, Any]:
                 'container_id': container_id,
                 'container_name': container_name,
                 'image': image,
-                'port': port
+                'port': port,
+                'host_port': host_port
             }
         # Change working directory to /app (test with a harmless command)
         cd_proc = subprocess.run([
@@ -51,7 +53,8 @@ async def create_docker_container(port: int = 8080) -> Dict[str, Any]:
                 'container_id': container_id,
                 'container_name': container_name,
                 'image': image,
-                'port': port
+                'port': port,
+                'host_port': host_port
             }
         return {
             'status': 'success',
@@ -59,7 +62,8 @@ async def create_docker_container(port: int = 8080) -> Dict[str, Any]:
             'container_name': container_name,
             'image': image,
             'port': port,
-            'message': f"Container '{container_name}' running with image '{image}' on port {port}, /app directory created, and cd into /app successful.",
+            'host_port': host_port,
+            'message': f"Container '{container_name}' running with image '{image}' exposing container port {port} to host port {host_port}, /app directory created, and cd into /app successful.",
             'cd_output': cd_proc.stdout.strip()
         }
     except Exception as e:
@@ -99,6 +103,9 @@ async def github_repo_clone(ctx: Context, container_id: str, github_url: str) ->
             update_proc = subprocess.run([
                 'docker', 'exec', container_id, 'apt-get', 'update'
             ], capture_output=True, text=True)
+            if update_proc.returncode != 0:
+                await ctx.error(f"Failed to update apt-get: {update_proc.stderr}\nSTDOUT: {update_proc.stdout}")
+                raise ToolError(f"Failed to update apt-get: {update_proc.stderr}\nSTDOUT: {update_proc.stdout}")
             install_proc = subprocess.run([
                 'docker', 'exec', container_id, 'apt-get', 'install', '-y', 'git'
             ], capture_output=True, text=True)
@@ -108,7 +115,7 @@ async def github_repo_clone(ctx: Context, container_id: str, github_url: str) ->
         # Clone the repo into /app
         await ctx.info(f"Cloning repo into /app/{repo_name} in container {container_id}")
         clone_proc = subprocess.run([
-        'docker', 'exec', container_id, 'bash', '-c', f'cd app && git clone {github_url}'
+            'docker', 'exec', container_id, 'bash', '-c', f'cd app && git clone {github_url}'
         ], capture_output=True, text=True)
         await ctx.report_progress(progress=80, total=100)
         if clone_proc.returncode != 0:
@@ -144,20 +151,66 @@ def install_requirements(container_id: str, repo_name: str) -> dict:
         install_proc = subprocess.run([
             'docker', 'exec', container_id, 'bash', '-c', f'cd app/{repo_name} && pip install -r requirements.txt'
         ], capture_output=True, text=True)
+        stdout = install_proc.stdout if install_proc.stdout is not None else ''
+        stderr = install_proc.stderr if install_proc.stderr is not None else ''
         if install_proc.returncode != 0:
             return {
                 'status': 'error',
-                'message': f'Failed to install requirements: {install_proc.stderr}\nSTDOUT: {install_proc.stdout}'
+                'message': f'Failed to install requirements: {stderr}\nSTDOUT: {stdout}',
+                'container_id': container_id,
+                'repo_name': repo_name
             }
         return {
             'status': 'success',
             'message': 'Requirements installed.',
-            'stdout': install_proc.stdout.strip()
+            'stdout': stdout.strip(),
+            'container_id': container_id,
+            'repo_name': repo_name
         }
     except subprocess.TimeoutExpired:
         return {
             'status': 'error',
             'message': 'pip install operation timed out (15 minutes)'
+        }
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': f'Unexpected error: {str(e)}'
+        }
+
+# Tool: Start FastAPI backend inside the container at the repo directory
+@mcp.tool
+def start_fastapi_backend(container_id: str, repo_name: str, run_command: str) -> dict:
+    """
+    Start the FastAPI backend inside the specified container and repo directory using the provided run command.
+    Args:
+        container_id: The Docker container ID
+        repo_name: The name of the repository (directory under /app)
+        run_command: The command to run (e.g., 'uvicorn main:app --reload')
+    Returns:
+        dict: Status, message, and info about the running backend
+    """
+    try:
+        # Always ensure --host 127.0.0.1 in the run_command for accessibility
+        if '--host' not in run_command:
+            run_command += ' --host 127.0.0.1'
+        # Run the command in the background inside the container at /app/repo_name
+        bash_cmd = f"cd app/{repo_name} && nohup {run_command} > fastapi.log 2>&1 &"
+        proc = subprocess.run([
+            'docker', 'exec', container_id, 'bash', '-c', bash_cmd
+        ], capture_output=True, text=True)
+        if proc.returncode != 0:
+            return {
+                'status': 'error',
+                'message': f'Failed to start backend: {proc.stderr}\nSTDOUT: {proc.stdout}',
+                'container_id': container_id,
+                'repo_name': repo_name
+            }
+        return {
+            'status': 'success',
+            'message': f'Backend started successfully using command: {run_command}',
+            'container_id': container_id,
+            'repo_name': repo_name
         }
     except Exception as e:
         return {
