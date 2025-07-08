@@ -14,5 +14,6 @@ dependencies = [
     "numpy",
     "matplotlib",
     "pillow",
-    "scikit-image"
+    "scikit-image",
+    "playwright",
 ]
