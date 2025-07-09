@@ -242,17 +242,18 @@ def requests(
         api_endpoint = "/" + api_endpoint
     url = f"http://localhost:{host_port}{api_endpoint}"
     method = http_method.upper()
+    import requests as pyrequests
     try:
         if method == "GET":
-            resp = requests.get(url)
+            resp = pyrequests.get(url)
         elif method == "POST":
-            resp = requests.post(url, json=json_input if json_input else None)
+            resp = pyrequests.post(url, json=json_input if json_input else None)
         elif method == "PUT":
-            resp = requests.put(url, json=json_input if json_input else None)
+            resp = pyrequests.put(url, json=json_input if json_input else None)
         elif method == "PATCH":
-            resp = requests.patch(url, json=json_input if json_input else None)
+            resp = pyrequests.patch(url, json=json_input if json_input else None)
         elif method == "DELETE":
-            resp = requests.delete(url, json=json_input if json_input else None)
+            resp = pyrequests.delete(url, json=json_input if json_input else None)
         else:
             return {
                 "status": "error",
