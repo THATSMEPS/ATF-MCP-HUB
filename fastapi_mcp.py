@@ -3,6 +3,7 @@ import time
 from typing import Dict, Any
 from fastmcp import FastMCP, Context
 from fastmcp.exceptions import ToolError
+import requests
 
 # Tool: Create FastAPI-ready Python Slim Docker Container
 mcp = FastMCP(name="FastAPI Container MCP Server")
@@ -179,7 +180,7 @@ def install_requirements(container_id: str, repo_name: str) -> dict:
         }
 
 @mcp.tool
-def start_fastapi_backend(container_id: str, repo_name: str, run_command: str) -> dict:
+def start_backend(container_id: str, repo_name: str, run_command: str) -> dict:
     """
     Start the FastAPI backend inside the specified container and repo directory using the provided run command.
     Args:
@@ -215,4 +216,63 @@ def start_fastapi_backend(container_id: str, repo_name: str, run_command: str) -
         return {
             'status': 'error',
             'message': f'Unexpected error: {str(e)}'
+        }
+
+@mcp.tool
+def requests(
+    host_port: int,
+    http_method: str,
+    api_endpoint: str,
+    json_input: dict = {}
+) -> dict:
+    """
+    Make an HTTP request to the FastAPI backend running in the Docker container.
+
+    Args:
+        host_port: The host port mapped to the container's FastAPI port.
+        http_method: HTTP method as a string (GET, POST, PATCH, PUT, DELETE).
+        api_endpoint: The API endpoint (e.g., '/predict').
+        json_input: Optional JSON data for POST, PUT, PATCH, DELETE.
+
+    Returns:
+        dict: Status, response, and error (if any).
+    """
+    # Ensure endpoint starts with /
+    if not api_endpoint.startswith("/"):
+        api_endpoint = "/" + api_endpoint
+    url = f"http://localhost:{host_port}{api_endpoint}"
+    method = http_method.upper()
+    try:
+        if method == "GET":
+            resp = requests.get(url)
+        elif method == "POST":
+            resp = requests.post(url, json=json_input if json_input else None)
+        elif method == "PUT":
+            resp = requests.put(url, json=json_input if json_input else None)
+        elif method == "PATCH":
+            resp = requests.patch(url, json=json_input if json_input else None)
+        elif method == "DELETE":
+            resp = requests.delete(url, json=json_input if json_input else None)
+        else:
+            return {
+                "status": "error",
+                "message": f"Unsupported HTTP method: {http_method}"
+            }
+        try:
+            content_type = resp.headers.get("content-type", "")
+            if "application/json" in content_type:
+                response_data = resp.json()
+            else:
+                response_data = resp.text
+        except Exception:
+            response_data = resp.text
+        return {
+            "status": "success",
+            "status_code": resp.status_code,
+            "response": response_data
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Request failed: {str(e)}"
         }
