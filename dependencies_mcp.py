@@ -9,9 +9,9 @@ from fastmcp.exceptions import ToolError
 import requests
 
 
-mcp = FastMCP(name="Dependencies Installation Server")
+dependencies_mcp = FastMCP(name="Dependencies Installation Server")
 
-@mcp.tool
+@dependencies_mcp.tool
 async def install_dependencies_python(cloned_path: str, ctx: Context) -> Dict[str, Any]:
     """
     Install Python dependencies for a cloned repository.
@@ -95,7 +95,7 @@ async def install_dependencies_python(cloned_path: str, ctx: Context) -> Dict[st
         await ctx.error(error_msg)
         raise ToolError(error_msg)
 
-@mcp.tool
+@dependencies_mcp.tool
 async def install_dependencies_node(cloned_path: str, ctx: Context, package_manager: Optional[str] = "npm") -> Dict[str, Any]:
     """
     Install Node.js dependencies for a cloned repository.
@@ -188,7 +188,7 @@ if __name__ == "__main__":
     print("🌐 Server will be available at: http://127.0.0.1:8001/dependencies/mcp")
     print("\nPress Ctrl+C to stop the server")
     
-    mcp.run(
+    dependencies_mcp.run(
         transport="streamable-http",
         host="127.0.0.1",
         port=8001,
