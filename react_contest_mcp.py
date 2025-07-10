@@ -14,7 +14,7 @@ if os.name == 'nt':  # Windows
     if platform.system() == "Windows":
         asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
-mcp = FastMCP(name="React Contest MCP Server")
+react_contest_mcp = FastMCP(name="React Contest MCP Server")
 
 # Remove BASE_DIR since we're not creating local directories anymore
 # BASE_DIR = os.path.join(os.getcwd(), "react_contest_runs")
@@ -474,7 +474,7 @@ echo "Tests completed successfully"
         await ctx.error(error_msg)
         raise ToolError(error_msg)
 
-@mcp.tool
+@react_contest_mcp.tool
 async def create_react_container(ctx: Context, port: int = 5173) -> Dict[str, Any]:
     """
     Create a Docker container with Node.js and Playwright ready for React testing.
@@ -487,7 +487,7 @@ async def create_react_container(ctx: Context, port: int = 5173) -> Dict[str, An
     """
     return await _create_react_container(ctx, port)
 
-@mcp.tool
+@react_contest_mcp.tool
 async def clone_repo_to_container(ctx: Context, container_id: str, github_url: str) -> Dict[str, Any]:
     """
     Clone a GitHub repository directly into the container.
@@ -500,7 +500,7 @@ async def clone_repo_to_container(ctx: Context, container_id: str, github_url: s
     """
     return await _clone_repo_to_container(ctx, container_id, github_url)
 
-@mcp.tool
+@react_contest_mcp.tool
 async def install_npm_dependencies(ctx: Context, container_id: str, repo_name: str) -> Dict[str, Any]:
     """
     Install npm dependencies for the React project inside the container.
@@ -513,7 +513,7 @@ async def install_npm_dependencies(ctx: Context, container_id: str, repo_name: s
     """
     return await _install_npm_dependencies(ctx, container_id, repo_name)
 
-@mcp.tool
+@react_contest_mcp.tool
 async def build_react_app(ctx: Context, container_id: str, repo_name: str, build_command: Optional[str] = None) -> Dict[str, Any]:
     """
     Build the React application inside the container.
@@ -527,7 +527,7 @@ async def build_react_app(ctx: Context, container_id: str, repo_name: str, build
     """
     return await _build_react_app(ctx, container_id, repo_name, build_command)
 
-@mcp.tool
+@react_contest_mcp.tool
 async def create_test_script_in_container(ctx: Context, container_id: str) -> Dict[str, Any]:
     """
     Create the Playwright test script directly inside the container.
@@ -539,7 +539,7 @@ async def create_test_script_in_container(ctx: Context, container_id: str) -> Di
     """
     return await _create_test_script_in_container(ctx, container_id)
 
-@mcp.tool
+@react_contest_mcp.tool
 async def start_react_app_and_test(
     ctx: Context, 
     container_id: str, 
@@ -562,7 +562,7 @@ async def start_react_app_and_test(
     """
     return await _start_react_app_and_test(ctx, container_id, repo_name, port, start_command, timeout)
 
-@mcp.tool
+@react_contest_mcp.tool
 async def run_full_react_contest(
     ctx: Context,
     github_url: str,
@@ -678,11 +678,18 @@ async def run_full_react_contest(
         elif container_name and keep_container_running:
             await ctx.info(f"Container {container_name} kept running as requested")
 
+
 if __name__ == "__main__":
-    try:
-        mcp.run()
-    except KeyboardInterrupt:
-        print("Shutting down gracefully...")
-    except Exception as e:
-        print(f"Error running MCP server: {e}")
-        raise
+    print("🚀 Starting React.js Container MCP Server...")
+    print("📡 Transport: Streamable HTTP")
+    print("🌐 Server endpoints available at:")
+    print("🌐 Server available at: http://127.0.0.1:8009/react/mcp")
+    print("\nPress Ctrl+C to stop the server")
+    
+    react_contest_mcp.run(
+        transport="streamable-http",
+        host="127.0.0.1",
+        port=8009,
+        path="/react/mcp",
+        log_level="info"
+    )

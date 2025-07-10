@@ -4,7 +4,7 @@ from typing import Dict, Any, List
 from fastmcp import FastMCP, Context
 from fastmcp.exceptions import ToolError
 
-mcp = FastMCP(name="Image Processing MCP Server")
+image_processing_mcp = FastMCP(name="Image Processing MCP Server")
 
 BASE_DIR = os.path.join(os.getcwd(), "image_contest_runs")
 os.makedirs(BASE_DIR, exist_ok=True)
@@ -44,7 +44,7 @@ def get_image_info(image_path: str) -> Dict[str, Any]:
             "error": str(e)
         }
 
-@mcp.tool
+@image_processing_mcp.tool
 async def run_image_processing(
     github_url: str,
     ctx: Context,
@@ -145,7 +145,7 @@ async def run_image_processing(
         await ctx.error(error_msg)
         raise ToolError(error_msg)
 
-@mcp.tool
+@image_processing_mcp.tool
 async def get_output_images_data(
     ctx: Context,
     repo_name: str
@@ -195,4 +195,16 @@ async def get_output_images_data(
         raise ToolError(error_msg)
 
 if __name__ == "__main__":
-    mcp.run()
+    print("🚀 Starting Image Processing MCP Server...")
+    print("📡 Transport: Streamable HTTP")
+    print("🌐 Server endpoints available at:")
+    print("🌐 Server available at: http://127.0.0.1:8005/image_processing/mcp")
+    print("\nPress Ctrl+C to stop the server")
+
+    image_processing_mcp.run(
+        transport="streamable-http",
+        host="127.0.0.1",
+        port=8005,
+        path="/image_processing/mcp",
+        log_level="info"
+    )

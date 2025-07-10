@@ -7,9 +7,9 @@ from fastmcp import FastMCP, Context
 from fastmcp.exceptions import ToolError
 import mysql.connector
 
-mcp = FastMCP(name="MySQL Evaluator MCP Server")
+mysql_query_mcp = FastMCP(name="MySQL Evaluator MCP Server")
 
-@mcp.tool
+@mysql_query_mcp.tool
 async def create_mysql_docker_environment(
     ctx: Context,
     database_name: str = "contest_db",
@@ -71,7 +71,7 @@ async def create_mysql_docker_environment(
         await ctx.error(error_msg)
         raise ToolError(error_msg)
 
-@mcp.tool
+@mysql_query_mcp.tool
 async def setup_contest_database(
     container_id: str,
     setup_queries: List[str],
@@ -117,7 +117,7 @@ async def setup_contest_database(
         await ctx.error(error_msg)
         raise ToolError(error_msg)
 
-@mcp.tool
+@mysql_query_mcp.tool
 async def evaluate_mysql_query(
     container_id: str,
     user_query: str,
@@ -208,7 +208,7 @@ async def evaluate_mysql_query(
             'correct': False
         }
 
-@mcp.tool
+@mysql_query_mcp.tool
 async def cleanup_mysql_environment(container_id: str, ctx: Context) -> Dict[str, Any]:
     """
     Clean up the MySQL Docker environment.
@@ -281,13 +281,13 @@ def _compare_results(actual: Any, expected: Any) -> bool:
 if __name__ == "__main__":
     print("🔧 Starting MySQL Evaluator MCP Server...")
     print("📡 Transport: Streamable HTTP")
-    print("🌐 Server will be available at: http://127.0.0.1:8003/mysql/mcp")
+    print("🌐 Server will be available at: http://127.0.0.1:8007/mysql/mcp")
     print("\nPress Ctrl+C to stop the server")
     
-    mcp.run(
+    mysql_query_mcp.run(
         transport="streamable-http",
         host="127.0.0.1",
-        port=8003,
+        port=8007,
         path="/mysql/mcp",
         log_level="info"
     )

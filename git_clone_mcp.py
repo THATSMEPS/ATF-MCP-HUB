@@ -9,9 +9,9 @@ from fastmcp.exceptions import ToolError
 import requests
 
 # Create the FastMCP server
-mcp = FastMCP(name="GitHub Clone Server")
+git_clone_mcp = FastMCP(name="GitHub Clone Server")
 
-@mcp.tool
+@git_clone_mcp.tool
 async def github_clone_repo(github_url: str, ctx: Context) -> Dict[str, Any]:
     """
     Clone a GitHub repository to a temporary directory.
@@ -93,7 +93,7 @@ async def github_clone_repo(github_url: str, ctx: Context) -> Dict[str, Any]:
         await ctx.error(error_msg)
         raise ToolError(error_msg)
 
-@mcp.tool
+@git_clone_mcp.tool
 async def cleanup_clone(local_path: str, ctx: Context) -> Dict[str, Any]:
     """
     Clean up a cloned repository directory.
@@ -132,13 +132,13 @@ async def cleanup_clone(local_path: str, ctx: Context) -> Dict[str, Any]:
 if __name__ == "__main__":
     print("🚀 Starting GitHub Clone MCP Server...")
     print("📡 Transport: Streamable HTTP")
-    print("🌐 Server will be available at: http://127.0.0.1:8000/git_clone/mcp")
+    print("🌐 Server will be available at: http://127.0.0.1:8004/git_clone/mcp")
     print("\nPress Ctrl+C to stop the server")
     
-    mcp.run(
+    git_clone_mcp.run(
         transport="streamable-http",
         host="127.0.0.1",
-        port=8000,
+        port=8004,
         path="/git_clone/mcp",
         log_level="info"
     )
