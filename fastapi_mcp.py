@@ -6,9 +6,9 @@ from fastmcp.exceptions import ToolError
 import requests
 
 # Tool: Create FastAPI-ready Python Slim Docker Container
-mcp = FastMCP(name="FastAPI Container MCP Server")
+fastapi_mcp = FastMCP(name="FastAPI Container MCP Server")
 
-@mcp.tool
+@fastapi_mcp.tool
 async def create_docker_container(port: int = 8080) -> Dict[str, Any]:
     """
     Create a Docker container running python:<version>-slim, ready for FastAPI, exposing the given port.
@@ -73,7 +73,7 @@ async def create_docker_container(port: int = 8080) -> Dict[str, Any]:
             'message': f"Exception: {str(e)}"
         }
 
-@mcp.tool
+@fastapi_mcp.tool
 async def github_repo_clone(ctx: Context, container_id: str, github_url: str) -> Dict[str, Any]:
     """
     Clone a GitHub repository into the /app directory of the specified Docker container.
@@ -142,7 +142,7 @@ async def github_repo_clone(ctx: Context, container_id: str, github_url: str) ->
         await ctx.error(error_msg)
         raise ToolError(error_msg)
 
-@mcp.tool
+@fastapi_mcp.tool
 def install_requirements(container_id: str, repo_name: str) -> dict:
     """
     Install requirements.txt in the given repo directory inside the container. repo_name should be the name of the repo cloned to /app/repo_name.
@@ -179,7 +179,7 @@ def install_requirements(container_id: str, repo_name: str) -> dict:
             'message': f'Unexpected error: {str(e)}'
         }
 
-@mcp.tool
+@fastapi_mcp.tool
 def start_backend(container_id: str, repo_name: str, run_command: str) -> dict:
     """
     Start the FastAPI backend inside the specified container and repo directory using the provided run command.
@@ -218,7 +218,7 @@ def start_backend(container_id: str, repo_name: str, run_command: str) -> dict:
             'message': f'Unexpected error: {str(e)}'
         }
 
-@mcp.tool
+@fastapi_mcp.tool
 def requests(
     host_port: int,
     http_method: str,
@@ -277,3 +277,19 @@ def requests(
             "status": "error",
             "message": f"Request failed: {str(e)}"
         }
+    
+
+if __name__ == "__main__":
+    print("🚀 Starting Fastapi Container MCP Server...")
+    print("📡 Transport: Streamable HTTP")
+    print("🌐 Server endpoints available at:")
+    print("🌐 Server available at: http://127.0.0.1:8003/fastapi/mcp")
+    print("\nPress Ctrl+C to stop the server")
+    
+    fastapi_mcp.run(
+        transport="streamable-http",
+        host="127.0.0.1",
+        port=8003,
+        path="/fastapi/mcp",
+        log_level="info"
+    )

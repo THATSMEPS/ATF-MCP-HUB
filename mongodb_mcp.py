@@ -5,12 +5,12 @@ from typing import Dict, Any, Optional
 from fastmcp import FastMCP, Context
 from fastmcp.exceptions import ToolError
 
-mcp = FastMCP(name="MongoDB Evaluator MCP Server")
+mongodb_mcp = FastMCP(name="MongoDB Evaluator MCP Server")
 
 
 # Tool 1: Create MongoDB Docker Container (only needs port)
 
-@mcp.tool
+@mongodb_mcp.tool
 async def create_docker_container(
     ctx: Context,
     mongo_port: int = 27017
@@ -64,7 +64,7 @@ async def create_docker_container(
         raise ToolError(error_msg)
 
 # Tool 2: Create Database in Existing MongoDB Container (using mongosh container)
-@mcp.tool
+@mongodb_mcp.tool
 async def create_database(
     ctx: Context,
     db_mongo_container_name: str,
@@ -98,7 +98,7 @@ async def create_database(
         raise ToolError(error_msg)
 
 # Tool 3: Delete Database
-@mcp.tool
+@mongodb_mcp.tool
 async def delete_database(
     ctx: Context,
     db_mongo_container_name: str,
@@ -128,7 +128,7 @@ async def delete_database(
         raise ToolError(error_msg)
 
 # Tool 4: Create Collection (single or multiple, comma-separated input)
-@mcp.tool
+@mongodb_mcp.tool
 async def create_collection(
     ctx: Context,
     db_mongo_container_name: str,
@@ -164,7 +164,7 @@ async def create_collection(
     }
 
 # Tool 5: Read Collection (run arbitrary query on a single collection, with collection name check)
-@mcp.tool
+@mongodb_mcp.tool
 async def read_collection(
     ctx: Context,
     db_mongo_container_name: str,
@@ -219,7 +219,7 @@ async def read_collection(
         }
 
 # Tool 6: Update Collection (run arbitrary query on a single collection, with collection name check)
-@mcp.tool
+@mongodb_mcp.tool
 async def update_collection(
     ctx: Context,
     db_mongo_container_name: str,
@@ -270,7 +270,7 @@ async def update_collection(
         }
 
 # Tool 7: Delete Collection (single or multiple, comma-separated input)
-@mcp.tool
+@mongodb_mcp.tool
 async def delete_collection(
     ctx: Context,
     db_mongo_container_name: str,
@@ -306,7 +306,7 @@ async def delete_collection(
     }
 
 # Tool 8: Create Document (single, with collection name check in query)
-@mcp.tool
+@mongodb_mcp.tool
 async def create_document(
     ctx: Context,
     db_mongo_container_name: str,
@@ -356,7 +356,7 @@ async def create_document(
         }
 
 # Tool 9: Read Document (single, with collection name check in query)
-@mcp.tool
+@mongodb_mcp.tool
 async def read_document(
     ctx: Context,
     db_mongo_container_name: str,
@@ -410,7 +410,7 @@ async def read_document(
         }
 
 # Tool 10: Update Document (single, with collection name check in query)
-@mcp.tool
+@mongodb_mcp.tool
 async def update_document(
     ctx: Context,
     db_mongo_container_name: str,
@@ -460,7 +460,7 @@ async def update_document(
         }
 
 # Tool 11: Delete Document (single, with collection name check in query)
-@mcp.tool
+@mongodb_mcp.tool
 async def delete_document(
     ctx: Context,
     db_mongo_container_name: str,
@@ -512,13 +512,13 @@ async def delete_document(
 if __name__ == "__main__":
     print("🔧 Starting MongoDB Evaluator MCP Server...")
     print("📡 Transport: Streamable HTTP")
-    print("🌐 Server will be available at: http://127.0.0.1:8004/mongodb/mcp")
+    print("🌐 Server will be available at: http://127.0.0.1:8006/mongodb/mcp")
     print("\nPress Ctrl+C to stop the server")
 
-    mcp.run(
+    mongodb_mcp.run(
         transport="streamable-http",
         host="127.0.0.1",
-        port=8004,
+        port=8006,
         path="/mongodb/mcp",
         log_level="info"
     )

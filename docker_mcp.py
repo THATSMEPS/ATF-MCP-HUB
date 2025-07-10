@@ -10,9 +10,9 @@ from fastmcp.exceptions import ToolError
 DEFAULT_NODEJS_PORT = 3000
 DEFAULT_PYTHON_PORT = 8000
 
-mcp = FastMCP(name="Docker MCP Server")
+docker_mcp = FastMCP(name="Docker MCP Server")
 
-@mcp.tool
+@docker_mcp.tool
 async def create_and_run_docker(github_url: str, project_type: str, ctx: Context) -> Dict[str, Any]:
     """
     Create a Docker image, build and run it from a GitHub URL.
@@ -224,7 +224,7 @@ CMD ["/entrypoint.sh"]
 """
 
 # ...existing imports and code...
-@mcp.tool
+@docker_mcp.tool
 async def kill_container(container_id: str, ctx: Context) -> Dict[str, Any]:
     """
     Kill/stop a running Docker container by its ID or name.
@@ -290,7 +290,7 @@ if __name__ == "__main__":
     print("🌐 Server will be available at: http://127.0.0.1:8002/docker/mcp")
     print("\nPress Ctrl+C to stop the server")
     
-    mcp.run(
+    docker_mcp.run(
         transport="streamable-http",
         host="127.0.0.1",
         port=8002,
